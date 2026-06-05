@@ -7,165 +7,225 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
 
-  const load = async () => {
-    const res = await api.get("/");
-    setLeads(res.data);
+  const loadLeads = async () => {
+    try {
+      const res = await api.get("/");
+      setLeads(res.data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   useEffect(() => {
-    load();
+    loadLeads();
   }, []);
 
   const addLead = async (data) => {
-    await api.post("/", data);
-    load();
+    try {
+      await api.post("/", {
+        ...data,
+        status: "New",
+      });
+
+      loadLeads();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const deleteLead = async (id) => {
-    await api.delete(`/${id}`);
-    load();
+    try {
+      await api.delete(`/${id}`);
+      loadLeads();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const updateStatus = async (id, status) => {
-    await api.put(`/${id}`, { status });
-    load();
+    try {
+      await api.put(`/${id}`, { status });
+      loadLeads();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
+    const searchMatch =
       lead.name?.toLowerCase().includes(search.toLowerCase()) ||
       lead.email?.toLowerCase().includes(search.toLowerCase()) ||
       lead.company?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus =
-      filterStatus === "All" || lead.status === filterStatus;
+    const statusMatch =
+      filterStatus === "All" ||
+      lead.status === filterStatus;
 
-    return matchesSearch && matchesStatus;
+    return searchMatch && statusMatch;
   });
 
   const totalLeads = leads.length;
-  const newLeads = leads.filter((l) => l.status === "New").length;
-  const convertedLeads = leads.filter(
-    (l) => l.status === "Converted"
+  const newLeads = leads.filter(
+    (lead) => lead.status === "New"
   ).length;
-  const lostLeads = leads.filter((l) => l.status === "Lost").length;
+
+  const convertedLeads = leads.filter(
+    (lead) => lead.status === "Converted"
+  ).length;
+
+  const lostLeads = leads.filter(
+    (lead) => lead.status === "Lost"
+  ).length;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Lead Management CRM</h1>
+    <div className="container">
+      <h1 className="title">
+        Lead Management CRM
+      </h1>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: "10px",
-          marginBottom: "20px",
-        }}
-      >
-        <div style={cardStyle}>Total: {totalLeads}</div>
-        <div style={cardStyle}>New: {newLeads}</div>
-        <div style={cardStyle}>Converted: {convertedLeads}</div>
-        <div style={cardStyle}>Lost: {lostLeads}</div>
+      <div className="stats">
+        <div className="card">
+          <h3>{totalLeads}</h3>
+          <p>Total Leads</p>
+        </div>
+
+        <div className="card">
+          <h3>{newLeads}</h3>
+          <p>New Leads</p>
+        </div>
+
+        <div className="card">
+          <h3>{convertedLeads}</h3>
+          <p>Converted Leads</p>
+        </div>
+
+        <div className="card">
+          <h3>{lostLeads}</h3>
+          <p>Lost Leads</p>
+        </div>
       </div>
 
       <LeadForm onAdd={addLead} />
 
-      <div style={{ margin: "20px 0" }}>
+      <div className="filter-bar">
         <input
-          placeholder="Search Name / Email / Company"
+          type="text"
+          placeholder="Search by Name, Email or Company"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={inputStyle}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
         />
 
         <select
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={inputStyle}
+          onChange={(e) =>
+            setFilterStatus(e.target.value)
+          }
         >
-          <option>All</option>
-          <option>New</option>
-          <option>Contacted</option>
-          <option>Qualified</option>
-          <option>Converted</option>
-          <option>Lost</option>
+          <option value="All">All</option>
+          <option value="New">New</option>
+          <option value="Contacted">
+            Contacted
+          </option>
+          <option value="Qualified">
+            Qualified
+          </option>
+          <option value="Converted">
+            Converted
+          </option>
+          <option value="Lost">Lost</option>
         </select>
       </div>
 
-      <table
-        border="1"
-        cellPadding="10"
-        width="100%"
-      >
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Company</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {filteredLeads.map((lead) => (
-            <tr key={lead._id}>
-              <td>{lead.name}</td>
-              <td>{lead.email}</td>
-              <td>{lead.phone}</td>
-              <td>{lead.company}</td>
-
-              <td>
-                <select
-                  value={lead.status}
-                  onChange={(e) =>
-                    updateStatus(
-                      lead._id,
-                      e.target.value
-                    )
-                  }
-                >
-                  <option>New</option>
-                  <option>Contacted</option>
-                  <option>Qualified</option>
-                  <option>Converted</option>
-                  <option>Lost</option>
-                </select>
-              </td>
-
-              <td>
-                {new Date(
-                  lead.createdAt
-                ).toLocaleDateString()}
-              </td>
-
-              <td>
-                <button
-                  onClick={() =>
-                    deleteLead(lead._id)
-                  }
-                >
-                  Delete
-                </button>
-              </td>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Company</th>
+              <th>Status</th>
+              <th>Created Date</th>
+              <th>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {filteredLeads.length > 0 ? (
+              filteredLeads.map((lead) => (
+                <tr key={lead._id}>
+                  <td>{lead.name}</td>
+                  <td>{lead.email}</td>
+                  <td>{lead.phone}</td>
+                  <td>{lead.company}</td>
+
+                  <td>
+                    <select
+                      className="status-select"
+                      value={lead.status}
+                      onChange={(e) =>
+                        updateStatus(
+                          lead._id,
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value="New">
+                        New
+                      </option>
+                      <option value="Contacted">
+                        Contacted
+                      </option>
+                      <option value="Qualified">
+                        Qualified
+                      </option>
+                      <option value="Converted">
+                        Converted
+                      </option>
+                      <option value="Lost">
+                        Lost
+                      </option>
+                    </select>
+                  </td>
+
+                  <td>
+                    {lead.createdAt
+                      ? new Date(
+                          lead.createdAt
+                        ).toLocaleDateString()
+                      : "-"}
+                  </td>
+
+                  <td>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() =>
+                        deleteLead(lead._id)
+                      }
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="7"
+                  style={{
+                    textAlign: "center",
+                    padding: "20px",
+                  }}
+                >
+                  No Leads Found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-const cardStyle = {
-  padding: "20px",
-  border: "1px solid #ddd",
-  borderRadius: "10px",
-  textAlign: "center",
-};
-
-const inputStyle = {
-  padding: "10px",
-  marginRight: "10px",
-};
